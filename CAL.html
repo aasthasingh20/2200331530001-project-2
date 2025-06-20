@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Average Calculator Microservice</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- React + ReactDOM via CDN -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.development.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+    ></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f0f2f5;
+        margin: 0;
+        padding: 0;
+      }
+
+      .container {
+        max-width: 500px;
+        margin: 60px auto;
+        padding: 20px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+
+      input {
+        width: 100%;
+        padding: 10px;
+        font-size: 1rem;
+        margin-top: 10px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+      }
+
+      button {
+        margin-top: 15px;
+        padding: 10px 20px;
+        font-size: 1rem;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #2980b9;
+      }
+
+      .result {
+        margin-top: 20px;
+        font-size: 1.2rem;
+        color: green;
+      }
+
+      .error {
+        margin-top: 15px;
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <!-- React App Script -->
+    <script type="text/babel">
+      const { useState } = React;
+
+      function App() {
+        const [input, setInput] = useState("");
+        const [average, setAverage] = useState(null);
+        const [error, setError] = useState("");
+
+        const calculate = async () => {
+          setError("");
+          setAverage(null);
+
+          const nums = input
+            .split(",")
+            .map((x) => parseFloat(x.trim()))
+            .filter((x) => !isNaN(x));
+
+          if (nums.length === 0) {
+            setError("Please enter valid comma-separated numbers.");
+            return;
+          }
+
+          try {
+            const res = await fetch("http://localhost:5000/api/average", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ numbers: nums }),
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+              setAverage(data.average);
+            } else {
+              setError(data.error || "Something went wrong.");
+            }
+          } catch (err) {
+            setError("Failed to reach the server.");
+          }
+        };
+
+        return (
+          <div className="container">
+            <h2>Average Calculator</h2>
+            <input
+              type="text"
+              placeholder="Enter numbers, e.g. 10, 20, 30"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+            />
+            <button onClick={calculate}>Calculate</button>
+
+            {error && <p className="error">{error}</p>}
+            {average !== null && <p className="result">Average: {average}</p>}
+          </div>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+  </body>
+</html>
